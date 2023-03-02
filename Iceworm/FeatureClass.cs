@@ -150,11 +150,23 @@ public class FeatureClass<T> : IDisposable
                 try
                 {
                     var type = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
-                    p.SetValue(item, Convert.ChangeType(value, type));
+                    var convertedValue = Convert.ChangeType(value, type);
+
+                    if (p.SetMethod is null)
+                    {
+                        var backingField = FindBackingField(p.Name)
+                            ?? throw new InvalidOperationException("No backing field found.");
+
+                        backingField.SetValue(item, convertedValue);
+                    }
+                    else
+                    {
+                        p.SetValue(item, convertedValue);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidOperationException($"Could not convert {value.GetType()} to {p.PropertyType} ({typeof(T)}.{p.Name}).", ex);
+                    throw new InvalidOperationException($"Could not set {typeof(T)}.{p.Name} to {value}.", ex);
                 }
             }
 
@@ -177,6 +189,26 @@ public class FeatureClass<T> : IDisposable
                 yield return after;
             }
         }
+    }
+
+    private static FieldInfo? FindBackingField(string propertyName)
+    {
+        static IEnumerable<Type> GetTypes(Type? type)
+        {
+            while (true)
+            {
+                if (type is null)
+                    yield break;
+
+                yield return type;
+                type = type.BaseType;
+            }
+        }
+
+        return GetTypes(typeof(T))
+            .Select(x => x.GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic))
+            .OfType<FieldInfo>()
+            .FirstOrDefault();
     }
 
     public IEnumerable<T> Query()
