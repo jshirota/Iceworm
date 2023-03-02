@@ -8,7 +8,7 @@ namespace Iceworm;
 
 public class FeatureClass<T> : IDisposable
 {
-    public Geodatabase Geodatabase { get; }
+    public Datastore Datastore { get; }
     public Table Table { get; }
 
     internal readonly Mapping mapping = new();
@@ -32,9 +32,10 @@ public class FeatureClass<T> : IDisposable
             Host.Initialize();
         }
 
-        var databasePath = Path.GetFullPath(database);
+        var databasePath = Path.GetFullPath(database).ToLower();
+        var tableName = table.ToLower();
 
-        Geodatabase GetGeodatabase()
+        Datastore GetDatastore()
         {
             var uri = new Uri(databasePath);
 
@@ -47,11 +48,24 @@ public class FeatureClass<T> : IDisposable
             if (databasePath.EndsWith(".sde"))
                 return new Geodatabase(new DatabaseConnectionFile(uri));
 
+            if (tableName.Contains(".shp") || tableName.Contains(".dbf") || File.Exists($@"{databasePath}\{tableName}.shp") || File.Exists($@"{databasePath}\{tableName}.dbf"))
+                return new FileSystemDatastore(new FileSystemConnectionPath(uri, FileSystemDatastoreType.Shapefile));
+
+            if (tableName.Contains(".dwg"))
+                return new FileSystemDatastore(new FileSystemConnectionPath(uri, FileSystemDatastoreType.Cad));
+
             throw new InvalidOperationException($"'{databasePath}' is not a supported format.");
         }
 
-        this.Geodatabase = GetGeodatabase();
-        this.Table = this.Geodatabase.OpenDataset<Table>(table);
+        this.Datastore = GetDatastore();
+
+        this.Table = this.Datastore switch
+        {
+            FileSystemDatastore fileSystemDatastore => fileSystemDatastore.OpenDataset<Table>(table),
+            Geodatabase geodatabase => geodatabase.OpenDataset<Table>(table),
+
+            _ => throw new InvalidOperationException($"'{databasePath}' is not a supported format.")
+        };
 
         var fields = this.Table.GetDefinition().GetFields().ToDictionary(x => x.Name.ToLower());
 
@@ -79,7 +93,7 @@ public class FeatureClass<T> : IDisposable
     private FeatureClass(FeatureClass<T> context)
     {
         this.mapping = context.mapping;
-        this.Geodatabase = context.Geodatabase;
+        this.Datastore = context.Datastore;
         this.Table = context.Table;
         this.outputSpatialReference = context.outputSpatialReference;
         this.oidFieldName = context.oidFieldName;
@@ -275,7 +289,7 @@ public class FeatureClass<T> : IDisposable
     public void Dispose()
     {
         this.Table.Dispose();
-        this.Geodatabase.Dispose();
+        this.Datastore.Dispose();
 
         GC.SuppressFinalize(this);
     }
