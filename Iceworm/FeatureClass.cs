@@ -48,7 +48,7 @@ public class FeatureClass<T> : IDisposable
             if (databasePath.EndsWith(".sde"))
                 return new Geodatabase(new DatabaseConnectionFile(uri));
 
-            if (tableName.Contains(".shp") || tableName.Contains(".dbf") || File.Exists($@"{databasePath}\{tableName}.shp") || File.Exists($@"{databasePath}\{tableName}.dbf"))
+            if (tableName.EndsWith(".shp") || tableName.EndsWith(".dbf") || File.Exists($@"{databasePath}\{tableName}.shp") || File.Exists($@"{databasePath}\{tableName}.dbf"))
                 return new FileSystemDatastore(new FileSystemConnectionPath(uri, FileSystemDatastoreType.Shapefile));
 
             if (tableName.Contains(".dwg"))
