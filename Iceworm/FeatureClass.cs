@@ -8,12 +8,13 @@ namespace Iceworm;
 
 public class FeatureClass<T> : IDisposable
 {
-    public Datastore Datastore { get; }
+    public Geodatabase? Geodatabase => this.datastore as Geodatabase;
     public Table Table { get; }
 
     internal readonly Mapping mapping = new();
     private static bool hostInitialized;
 
+    private readonly Datastore datastore;
     private readonly SpatialReference? outputSpatialReference;
     private readonly string oidFieldName;
     private readonly List<string> whereClauses = new();
@@ -54,17 +55,17 @@ public class FeatureClass<T> : IDisposable
             if (tableName.Contains(".dwg"))
                 return new FileSystemDatastore(new FileSystemConnectionPath(uri, FileSystemDatastoreType.Cad));
 
-            throw new InvalidOperationException($"'{databasePath}' is not a supported format.");
+            throw new InvalidOperationException($@"'{databasePath}\{tableName}' is not a supported format.");
         }
 
-        this.Datastore = GetDatastore();
+        this.datastore = GetDatastore();
 
-        this.Table = this.Datastore switch
+        this.Table = this.datastore switch
         {
             FileSystemDatastore fileSystemDatastore => fileSystemDatastore.OpenDataset<Table>(table),
             Geodatabase geodatabase => geodatabase.OpenDataset<Table>(table),
 
-            _ => throw new InvalidOperationException($"'{databasePath}' is not a supported format.")
+            _ => throw new InvalidOperationException()
         };
 
         var fields = this.Table.GetDefinition().GetFields().ToDictionary(x => x.Name.ToLower());
@@ -93,7 +94,7 @@ public class FeatureClass<T> : IDisposable
     private FeatureClass(FeatureClass<T> context)
     {
         this.mapping = context.mapping;
-        this.Datastore = context.Datastore;
+        this.datastore = context.datastore;
         this.Table = context.Table;
         this.outputSpatialReference = context.outputSpatialReference;
         this.oidFieldName = context.oidFieldName;
@@ -289,7 +290,7 @@ public class FeatureClass<T> : IDisposable
     public void Dispose()
     {
         this.Table.Dispose();
-        this.Datastore.Dispose();
+        this.datastore.Dispose();
 
         GC.SuppressFinalize(this);
     }
