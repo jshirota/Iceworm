@@ -15,7 +15,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Update="Sample.geodatabase">
+    <None Update="world.geodatabase">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

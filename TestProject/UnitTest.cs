@@ -11,7 +11,7 @@ public class UnitTest
     public void Sort1()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Airport>("Sample.geodatabase/airport_pt", mapping);
+        using var context = new FeatureClass<Airport>("canada.geodatabase/airport_pt", propertyNameToFieldName: mapping);
 
         var query = context
             .Where(x => x.Name.StartsWith("B"))
@@ -29,7 +29,7 @@ public class UnitTest
     public void Sort2()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Airport>("Sample.geodatabase/airport_pt", mapping);
+        using var context = new FeatureClass<Airport>("canada.geodatabase/airport_pt", propertyNameToFieldName: mapping);
 
         var query = context
             .Where(x => x.Name.StartsWith("B"))
@@ -47,12 +47,12 @@ public class UnitTest
     public void Wgs84()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Airport>("Sample.geodatabase/airport_pt", mapping);
+        using var context = new FeatureClass<Airport>("canada.geodatabase/airport_pt", propertyNameToFieldName: mapping);
 
         var query = context
             .OrderBy(x => x.ObjectID);
 
-        using var context2 = new FeatureClass<Airport>("Sample.geodatabase/airport_pt", mapping, SpatialReferenceBuilder.CreateSpatialReference(4326));
+        using var context2 = new FeatureClass<Airport>("canada.geodatabase/airport_pt", 4326, mapping);
         var query4326 = context2
             .OrderBy(x => x.ObjectID);
 
@@ -70,7 +70,7 @@ public class UnitTest
     public void NotStartsWith()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Pipeline>("Sample.geodatabase/piplelines_1", mapping);
+        using var context = new FeatureClass<Pipeline>("canada.geodatabase/piplelines_1", propertyNameToFieldName: mapping);
 
         var query = context
             .Where(x => !x.Owner.StartsWith("P"))
@@ -85,7 +85,7 @@ public class UnitTest
     [TestMethod]
     public void Poly()
     {
-        using var context = new FeatureClass<ProtectedArea>("Sample.geodatabase/prot_areas_p");
+        using var context = new FeatureClass<ProtectedArea>("canada.geodatabase/prot_areas_p");
 
         var query = context
             .Where(x => x.Name_EN.Contains("Ice"))
@@ -100,7 +100,7 @@ public class UnitTest
     [TestMethod]
     public void Wkt()
     {
-        using var context = new FeatureClass<ProtectedArea>("Sample.geodatabase/prot_areas_p");
+        using var context = new FeatureClass<ProtectedArea>("canada.geodatabase/prot_areas_p");
 
         var query = context
             .OrderBy(x => x.Name_EN);
@@ -118,7 +118,7 @@ public class UnitTest
     [TestMethod]
     public void Json()
     {
-        using var context = new FeatureClass<ProtectedArea>("Sample.geodatabase/prot_areas_p");
+        using var context = new FeatureClass<ProtectedArea>("canada.geodatabase/prot_areas_p");
 
         var query = context
             .OrderBy(x => x.Name_EN);
@@ -136,7 +136,7 @@ public class UnitTest
     [TestMethod]
     public void Init()
     {
-        using var context = new FeatureClass<ProtectedArea>("Sample.geodatabase/prot_areas_p");
+        using var context = new FeatureClass<ProtectedArea>("canada.geodatabase/prot_areas_p");
 
         var query = context
             .OrderBy(x => x.Name_EN);
@@ -146,7 +146,7 @@ public class UnitTest
     public void Insert()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Airport>("Sample.geodatabase/airport_pt", mapping);
+        using var context = new FeatureClass<Airport>("canada.geodatabase/airport_pt", propertyNameToFieldName: mapping);
 
         var airports = context.Query().Take(10).ToArray();
 
@@ -164,7 +164,7 @@ public class UnitTest
     public void Update()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Airport>("Sample.geodatabase/airport_pt", mapping);
+        using var context = new FeatureClass<Airport>("canada.geodatabase/airport_pt", propertyNameToFieldName: mapping);
 
         context.Update(x => x with { Class = "Ottawa" });
 
@@ -178,7 +178,7 @@ public class UnitTest
     public void Update_Destructive()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Airport2>("Sample.geodatabase/airport_pt", mapping);
+        using var context = new FeatureClass<Airport2>("canada.geodatabase/airport_pt", propertyNameToFieldName: mapping);
 
         context
             .Where(x => x.Name.StartsWith("A"))
@@ -195,7 +195,7 @@ public class UnitTest
     public void Delete()
     {
         var mapping = new Dictionary<string, string> { { "Name", "name_e" } };
-        using var context = new FeatureClass<Airport2>("Sample.geodatabase/airport_pt", mapping);
+        using var context = new FeatureClass<Airport2>("canada.geodatabase/airport_pt", propertyNameToFieldName: mapping);
 
         context.Where(x => x.Name.StartsWith("A")).Delete();
 

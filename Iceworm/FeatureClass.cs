@@ -21,15 +21,17 @@ public class FeatureClass<T> : IDisposable
     private readonly List<string> orderByClauses = new();
     private (Geometry filterGeometry, SpatialRelationship spatialRelationship) spatialFilter;
 
-    public FeatureClass(string database, string table, Dictionary<string, string>? propertyNameToFieldName = null, SpatialReference? outputSpatialReference = null, bool initializeHost = true)
+    public FeatureClass(string database, string table, int? wkid = null, Dictionary<string, string>? propertyNameToFieldName = null, bool initializeHost = true)
     {
         if (!hostInitialized && initializeHost)
         {
             hostInitialized = true;
+
 #pragma warning disable CA1416 // Validate platform compatibility
             Thread.CurrentThread.SetApartmentState(ApartmentState.Unknown);
             Thread.CurrentThread.SetApartmentState(ApartmentState.STA);
 #pragma warning restore CA1416 // Validate platform compatibility
+
             Host.Initialize();
         }
 
@@ -70,7 +72,7 @@ public class FeatureClass<T> : IDisposable
 
         var fields = this.Table.GetDefinition().GetFields().ToDictionary(x => x.Name.ToLower());
 
-        this.outputSpatialReference = outputSpatialReference;
+        this.outputSpatialReference = wkid is null ? null : SpatialReferenceBuilder.CreateSpatialReference(wkid.Value);
         this.oidFieldName = fields.Values.Single(x => x.FieldType == FieldType.OID).Name;
 
         foreach (var p in typeof(T).GetProperties())
@@ -86,8 +88,8 @@ public class FeatureClass<T> : IDisposable
         }
     }
 
-    public FeatureClass(string tablePath, Dictionary<string, string>? propertyNameToFieldName = null, SpatialReference? outputSpatialReference = null, bool initializeHost = true)
-        : this(Path.GetDirectoryName(Path.GetFullPath(tablePath))!, Path.GetFileName(tablePath), propertyNameToFieldName, outputSpatialReference, initializeHost)
+    public FeatureClass(string tablePath, int? wkid = null, Dictionary<string, string>? propertyNameToFieldName = null, bool initializeHost = true)
+        : this(Path.GetDirectoryName(Path.GetFullPath(tablePath))!, Path.GetFileName(tablePath), wkid, propertyNameToFieldName, initializeHost)
     {
     }
 

@@ -1,28 +1,20 @@
-﻿using ArcGIS.Core.Data;
-using ArcGIS.Core.Geometry;
+﻿using ArcGIS.Core.Geometry;
 using Iceworm;
 
-using var featureClass = new FeatureClass<Airport>("Sample.geodatabase", "airport_pt");
+using var featureClass = new FeatureClass<City>("world.geodatabase/Cities");
 
-foreach (var airport in featureClass.OrderBy(x => x.Name_e).Query())
+var n = 0;
+
+foreach (var city in featureClass
+    .Where(x => x.Pop > 1000000)
+    .OrderBy(x => x.Pop, true)
+    .Query())
 {
-    Console.WriteLine($"{airport.Name_e} {airport.Prv_Code}");
+    Console.WriteLine($"{++n} {city.City_Name} {city.Pop}");
 }
 
-record Airport(
-    int ObjectID
-    , string Name_e
-    , short Prv_Code
-    //, MapPoint Shape
-    );
-
-class AirportBase
-{
-    public short Prv_Code { get; }
-}
-
-class Airport2 : AirportBase
-{
-    public int ObjectID { get; init; }
-    public string Name_e { get; private set; } = default!;
-}
+public record City(
+    int ObjectID,
+    string City_Name,
+    int Pop,
+    MapPoint Shape);
