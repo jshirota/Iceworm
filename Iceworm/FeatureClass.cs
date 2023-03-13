@@ -137,19 +137,18 @@ public class FeatureClass<T> : IDisposable
 
     private IEnumerable<T> IterateCursor(Func<T, T>? edit = null)
     {
-        var filter = new SpatialQueryFilter
-        {
-            SubFields = string.Join(",", this.mapping.LowerCaseFieldName.Keys),
-            WhereClause = string.Join(" AND ", this.whereClauses),
-            PostfixClause = this.orderByClauses.Any() ? $"ORDER BY {string.Join(",", this.orderByClauses)}" : "",
-            OutputSpatialReference = this.outputSpatialReference
-        };
+        var filter = this.spatialFilter.filterGeometry is null
+            ? new QueryFilter()
+            : new SpatialQueryFilter
+            {
+                FilterGeometry = this.spatialFilter.filterGeometry,
+                SpatialRelationship = this.spatialFilter.spatialRelationship
+            };
 
-        if (this.spatialFilter.filterGeometry is not null)
-        {
-            filter.FilterGeometry = this.spatialFilter.filterGeometry;
-            filter.SpatialRelationship = this.spatialFilter.spatialRelationship;
-        }
+        filter.SubFields = string.Join(",", this.mapping.LowerCaseFieldName.Keys);
+        filter.WhereClause = string.Join(" AND ", this.whereClauses);
+        filter.PostfixClause = this.orderByClauses.Any() ? $"ORDER BY {string.Join(",", this.orderByClauses)}" : "";
+        filter.OutputSpatialReference = this.outputSpatialReference;
 
         using var rowCursor = Table.Search(filter, false);
         while (rowCursor.MoveNext())
