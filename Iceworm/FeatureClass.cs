@@ -19,7 +19,7 @@ public class FeatureClass<T> : IDisposable
     private readonly string oidFieldName;
     private readonly List<string> whereClauses = new();
     private readonly List<string> orderByClauses = new();
-    private (Geometry filterGeometry, SpatialRelationship spatialRelationship) spatialFilter;
+    private (Geometry? filterGeometry, SpatialRelationship spatialRelationship) spatialFilter;
 
     public FeatureClass(string database, string table, int? wkid = null, Dictionary<string, string>? propertyNameToFieldName = null, bool initializeHost = true)
     {
@@ -135,16 +135,20 @@ public class FeatureClass<T> : IDisposable
         return new(this, field, descending);
     }
 
-    private IEnumerable<T> IterateCursor(Func<T, T>? edit = null)
+    private QueryFilter CreateFilter()
     {
-        var filter = this.spatialFilter.filterGeometry is null
+        return this.spatialFilter.filterGeometry is null
             ? new QueryFilter()
             : new SpatialQueryFilter
             {
                 FilterGeometry = this.spatialFilter.filterGeometry,
                 SpatialRelationship = this.spatialFilter.spatialRelationship
             };
+    }
 
+    private IEnumerable<T> IterateCursor(Func<T, T>? edit = null)
+    {
+        var filter = this.CreateFilter();
         filter.SubFields = string.Join(",", this.mapping.LowerCaseFieldName.Keys);
         filter.WhereClause = string.Join(" AND ", this.whereClauses);
         filter.PostfixClause = this.orderByClauses.Any() ? $"ORDER BY {string.Join(",", this.orderByClauses)}" : "";
@@ -274,16 +278,8 @@ public class FeatureClass<T> : IDisposable
 
     public void Delete()
     {
-        var filter = new SpatialQueryFilter
-        {
-            WhereClause = string.Join(" AND ", this.whereClauses)
-        };
-
-        if (this.spatialFilter.filterGeometry is not null)
-        {
-            filter.FilterGeometry = this.spatialFilter.filterGeometry;
-            filter.SpatialRelationship = this.spatialFilter.spatialRelationship;
-        }
+        var filter = this.CreateFilter();
+        filter.WhereClause = string.Join(" AND ", this.whereClauses);
 
         this.Table.DeleteRows(filter);
     }
