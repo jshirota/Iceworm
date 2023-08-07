@@ -14,7 +14,7 @@ public class FeatureClass<T> : IDisposable
     internal readonly Mapping mapping = new();
     private static bool hostInitialized;
 
-    private readonly Datastore datastore;
+    private readonly Datastore? datastore;
     private readonly SpatialReference? outputSpatialReference;
     private readonly string oidFieldName;
     private readonly List<string> whereClauses = new();
@@ -70,10 +70,25 @@ public class FeatureClass<T> : IDisposable
             _ => throw new InvalidOperationException()
         };
 
-        var fields = this.Table.GetDefinition().GetFields().ToDictionary(x => x.Name.ToLower());
+        this.outputSpatialReference = wkid is null ? null : SpatialReferenceBuilder.CreateSpatialReference(wkid.Value);
+
+        this.ResolveFields(propertyNameToFieldName, out this.oidFieldName);
+    }
+
+    public FeatureClass(Table table, int? wkid = null, Dictionary<string, string>? propertyNameToFieldName = null)
+    {
+        this.Table = table;
 
         this.outputSpatialReference = wkid is null ? null : SpatialReferenceBuilder.CreateSpatialReference(wkid.Value);
-        this.oidFieldName = fields.Values.Single(x => x.FieldType == FieldType.OID).Name;
+
+        this.ResolveFields(propertyNameToFieldName, out this.oidFieldName);
+    }
+
+    private void ResolveFields(Dictionary<string, string>? propertyNameToFieldName, out string oidFieldName)
+    {
+        var fields = this.Table.GetDefinition().GetFields().ToDictionary(x => x.Name.ToLower());
+
+        oidFieldName = fields.Values.Single(x => x.FieldType == FieldType.OID).Name;
 
         foreach (var p in typeof(T).GetProperties())
         {
@@ -287,7 +302,7 @@ public class FeatureClass<T> : IDisposable
     public void Dispose()
     {
         this.Table.Dispose();
-        this.datastore.Dispose();
+        this.datastore?.Dispose();
 
         GC.SuppressFinalize(this);
     }
